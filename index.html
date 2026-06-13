@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>A few questions, whenever you have a sec</title>
+<style>
+  :root { --bg:#faf8f4; --card:#ffffff; --ink:#2b2b29; --muted:#6b6b66; --accent:#2f8f6f; --accent-soft:#e4f1ea; --line:#e7e4dc; }
+  * { box-sizing: border-box; -webkit-text-size-adjust: 100%; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif; line-height:1.55; }
+  .wrap { max-width:680px; margin:0 auto; padding:24px 18px 64px; }
+  .hello { background:var(--accent-soft); border-radius:16px; padding:20px 20px 18px; margin-bottom:24px; }
+  .hello h1 { font-size:22px; font-weight:600; margin:0 0 8px; }
+  .hello p { margin:0; font-size:16px; color:#33564a; }
+  .save { font-size:13px; color:var(--muted); margin:6px 0 22px; display:flex; align-items:center; gap:6px; }
+  .save b { color:var(--accent); font-weight:600; }
+  section { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px 18px 6px; margin-bottom:18px; }
+  .tag { display:inline-block; font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--accent); background:var(--accent-soft); padding:4px 10px; border-radius:999px; margin-bottom:6px; }
+  .tag .t { color:var(--muted); font-weight:500; text-transform:none; letter-spacing:0; }
+  .q { margin:16px 0 18px; }
+  label { display:block; font-size:16px; font-weight:600; margin-bottom:8px; }
+  label .hint { display:block; font-weight:400; font-size:14px; color:var(--muted); margin-top:3px; }
+  textarea, input[type=text] { width:100%; font-size:16px; font-family:inherit; color:var(--ink); background:#fcfbf9; border:1px solid var(--line); border-radius:12px; padding:12px 14px; resize:vertical; }
+  textarea:focus, input:focus { outline:none; border-color:var(--accent); background:#fff; }
+  textarea { min-height:74px; }
+  .moments .row { display:flex; gap:8px; margin-bottom:8px; }
+  .moments input { flex:1; }
+  .moments button.add { white-space:nowrap; }
+  button { font-family:inherit; }
+  .actions { position:sticky; bottom:0; background:linear-gradient(to top, var(--bg) 70%, transparent); padding:16px 0 4px; margin-top:8px; display:flex; gap:10px; flex-wrap:wrap; }
+  .btn { flex:1; min-width:140px; font-size:16px; font-weight:600; padding:14px 16px; border-radius:14px; cursor:pointer; border:1px solid var(--accent); }
+  .btn.primary { background:var(--accent); color:#fff; }
+  .btn.secondary { background:#fff; color:var(--accent); }
+  .btn:active { transform:scale(.98); }
+  .toast { position:fixed; left:50%; bottom:22px; transform:translateX(-50%); background:var(--ink); color:#fff; font-size:14px; padding:10px 18px; border-radius:999px; opacity:0; transition:opacity .25s; pointer-events:none; }
+  .toast.show { opacity:1; }
+  .foot { font-size:13px; color:var(--muted); text-align:center; margin-top:14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hello">
+    <h1>Hey love — whenever you have 15 quiet minutes 💚</h1>
+    <p>No rush at all. You're the person I most want to learn from for this — integrative-trained, now inside a big system. Answer however's easy (type, or just tap the mic and talk). It saves as you go, so you can add to it across the month. — Dunal</p>
+  </div>
+
+  <div class="save"><span id="saveDot">●</span> <span id="saveTxt">Your answers save automatically on this phone.</span></div>
+
+  <section>
+    <span class="tag">Part 1 <span class="t">· your day right now (~5 min)</span></span>
+    <div class="q">
+      <label>1. What EMR do they have you on (Epic?), and your honest first impression?</label>
+      <textarea data-k="q1" placeholder="First impressions, good and bad…"></textarea>
+    </div>
+    <div class="q">
+      <label>2. The single most tedious, repetitive thing you do in it every day?</label>
+      <textarea data-k="q2" placeholder="The thing that makes you sigh…"></textarea>
+    </div>
+    <div class="q">
+      <label>3. When you want to practice integratively inside this system, where does the software fight you?
+        <span class="hint">Lifestyle, supplements, root-cause, longer thinking — where does it get in the way?</span></label>
+      <textarea data-k="q3" placeholder="Where the tool and your training collide…"></textarea>
+    </div>
+  </section>
+
+  <section class="moments">
+    <span class="tag">Part 2 <span class="t">· jot it when you notice it (10 sec each, over the month)</span></span>
+    <div class="q">
+      <label>4. Any "ugh, this should be easier" moments
+        <span class="hint">Add them as they happen. Even 3 over the month is gold.</span></label>
+      <div id="momentRows"></div>
+      <button type="button" class="btn secondary add" id="addMoment" style="flex:none;min-width:0;padding:10px 16px;font-size:15px;margin-top:4px;">+ Add a moment</button>
+    </div>
+    <div class="q">
+      <label>5. Anything you do <i>outside</i> the EMR because the system won't?
+        <span class="hint">Paper, a Google Doc, your memory, a sticky note…</span></label>
+      <textarea data-k="q5" placeholder="Your workarounds…"></textarea>
+    </div>
+  </section>
+
+  <section>
+    <span class="tag">Part 3 <span class="t">· the fun one (~5 min)</span></span>
+    <div class="q">
+      <label>6. If you had your <i>own</i> integrative practice, what would you want software to do that nothing does today?</label>
+      <textarea data-k="q6" placeholder="Dream big — no constraints…"></textarea>
+    </div>
+    <div class="q">
+      <label>7. What would have to be true for you to leave a big system and hang your own shingle?</label>
+      <textarea data-k="q7" placeholder="What would it take…"></textarea>
+    </div>
+  </section>
+
+  <section>
+    <span class="tag">Part 4 <span class="t">· the most valuable 2 minutes 🙏</span></span>
+    <div class="q">
+      <label>8. Who do you know who actually <i>owns</i> an integrative / functional / IV / hormone practice?
+        <span class="hint">From your fellowship or training — even 2–3 names. A one-line intro from you is worth more than anything else here.</span></label>
+      <textarea data-k="q8" placeholder="Names, and how I might reach them…"></textarea>
+    </div>
+  </section>
+
+  <div class="actions">
+    <button type="button" class="btn primary" id="copyBtn">Copy my answers</button>
+    <button type="button" class="btn secondary" id="emailBtn">Email to Dunal</button>
+  </div>
+  <p class="foot">Thank you. Seriously. This shapes the whole thing. ❤️</p>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+  const KEY = 'klar_fiancee_q_v1';
+  const $ = s => document.querySelector(s);
+  const fields = () => Array.from(document.querySelectorAll('[data-k]'));
+  let moments = [];
+
+  function renderMoments() {
+    const box = $('#momentRows'); box.innerHTML = '';
+    moments.forEach((val, i) => {
+      const row = document.createElement('div'); row.className = 'row';
+      const inp = document.createElement('input'); inp.type = 'text'; inp.value = val;
+      inp.placeholder = 'e.g. "had to click 6 times to…"';
+      inp.oninput = e => { moments[i] = e.target.value; save(); };
+      const del = document.createElement('button'); del.textContent = '×';
+      del.style.cssText = 'border:1px solid var(--line);background:#fff;border-radius:12px;width:44px;font-size:20px;color:var(--muted);cursor:pointer;';
+      del.onclick = () => { moments.splice(i,1); renderMoments(); save(); };
+      row.append(inp, del); box.append(row);
+    });
+  }
+  $('#addMoment').onclick = () => { moments.push(''); renderMoments(); save(); };
+
+  function save() {
+    const data = { moments };
+    fields().forEach(f => data[f.dataset.k] = f.value);
+    localStorage.setItem(KEY, JSON.stringify(data));
+    flashSaved();
+  }
+  let st;
+  function flashSaved() {
+    clearTimeout(st); const t = $('#saveTxt'); t.innerHTML = '<b>Saved.</b> Safe to close and come back.';
+    st = setTimeout(() => t.textContent = 'Your answers save automatically on this phone.', 1800);
+  }
+  function load() {
+    try {
+      const d = JSON.parse(localStorage.getItem(KEY) || '{}');
+      fields().forEach(f => { if (d[f.dataset.k]) f.value = d[f.dataset.k]; });
+      moments = Array.isArray(d.moments) ? d.moments : [];
+    } catch(e){ moments = []; }
+    if (moments.length === 0) moments = [''];
+    renderMoments();
+  }
+  fields().forEach(f => f.addEventListener('input', save));
+
+  function compile() {
+    const g = k => (document.querySelector('[data-k="'+k+'"]').value || '').trim() || '—';
+    const m = moments.filter(x => x.trim()).map((x,i)=> '   '+(i+1)+'. '+x.trim()).join('\n') || '   —';
+    return [
+      "Answers for Dunal — Klar questionnaire",
+      "",
+      "1. EMR + first impression:\n   " + g('q1'),
+      "2. Most tedious daily thing:\n   " + g('q2'),
+      "3. Where it fights integrative practice:\n   " + g('q3'),
+      "4. \"Ugh, should be easier\" moments:\n" + m,
+      "5. What I do outside the EMR:\n   " + g('q5'),
+      "6. Dream-practice software wishes:\n   " + g('q6'),
+      "7. What it'd take to go solo:\n   " + g('q7'),
+      "8. Integrative owner-operators I know:\n   " + g('q8'),
+    ].join('\n\n');
+  }
+  function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1900); }
+
+  $('#copyBtn').onclick = async () => {
+    const txt = compile();
+    try { await navigator.clipboard.writeText(txt); toast('Copied — now paste it into a text to Dunal'); }
+    catch(e){
+      const ta=document.createElement('textarea'); ta.value=txt; document.body.append(ta); ta.select();
+      try{ document.execCommand('copy'); toast('Copied — paste into a text to Dunal'); }catch(_){ toast('Select all + copy manually'); }
+      ta.remove();
+    }
+  };
+  $('#emailBtn').onclick = () => {
+    const subject = encodeURIComponent('My answers — Klar questionnaire');
+    const body = encodeURIComponent(compile());
+    window.location.href = 'mailto:dunal229@gmail.com?subject='+subject+'&body='+body;
+  };
+
+  load();
+</script>
+</body>
+</html>
