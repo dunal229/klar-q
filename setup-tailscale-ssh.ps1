@@ -71,11 +71,13 @@ try {
 
     $ts = Find-Tailscale
 
-    # ---- 2. Bring Tailscale up (browser login) ---------------------------
-    Info 'Running "tailscale up" - a browser will open. Sign in as dunal229@.'
-    & $ts up
+    # ---- 2. Bring Tailscale up (browser login, unattended) ---------------
+    # --unattended keeps Tailscale connected when no user is logged in, so
+    # SSH keeps working across logout/reboot without the tray toggle.
+    Info 'Running "tailscale up --unattended" - a browser will open. Sign in as dunal229@.'
+    & $ts up --unattended
     if ($LASTEXITCODE -ne 0) { throw 'tailscale up failed (login not completed?).' }
-    Ok 'Tailscale is up.'
+    Ok 'Tailscale is up (unattended mode enabled).'
 
     # ---- 3. Enable OpenSSH Server feature --------------------------------
     $cap = Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH.Server*'
