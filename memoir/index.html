@@ -23,6 +23,12 @@
   .sub{color:var(--soft);font-size:15px;margin:0;}
 
   .recorder{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;margin:18px 0;}
+  .modes{display:flex;gap:8px;margin-bottom:16px;}
+  .mode-tab{flex:1;border:1px solid var(--line);background:var(--panel-2);color:var(--soft);border-radius:12px;
+    padding:10px 8px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;}
+  .mode-tab.sel{border-color:var(--accent);background:var(--accent-soft);color:var(--ink);}
+  video.preview{width:100%;border-radius:14px;background:#000;margin-bottom:14px;display:none;aspect-ratio:4/3;object-fit:cover;}
+  video.preview.on{display:block;}
   .rec-top{display:flex;align-items:center;gap:14px;}
   .recbtn{width:64px;height:64px;border-radius:50%;border:none;background:var(--rec);cursor:pointer;flex:none;
     display:flex;align-items:center;justify-content:center;transition:transform .12s, border-radius .2s;box-shadow:0 6px 20px rgba(212,88,63,.28);}
@@ -41,6 +47,10 @@
   .clips{margin-top:14px;}
   .clip{display:flex;align-items:center;gap:10px;background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:8px;}
   .clip audio{flex:1;min-width:0;height:34px;}
+  .clip video{flex:1;min-width:0;max-height:200px;border-radius:8px;background:#000;}
+  .clip.vid{flex-direction:column;align-items:stretch;}
+  .clip.vid .clip-btns{display:flex;gap:8px;}
+  .clip.vid .dl{flex:1;}
   .clip .x{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:8px;width:34px;height:34px;font-size:18px;cursor:pointer;flex:none;}
   .clip .dl{border:1px solid var(--line);background:transparent;color:var(--soft);border-radius:8px;height:34px;padding:0 10px;font-size:13px;cursor:pointer;flex:none;}
 
@@ -74,6 +84,7 @@
   .te-tag{display:inline-block;font-size:12px;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:3px 9px;margin-right:6px;}
   .te-clip{margin-top:10px;}
   .te-clip audio{width:100%;height:36px;}
+  .te-clip video{width:100%;max-height:340px;border-radius:10px;background:#000;}
   .te-actions{margin-top:10px;display:flex;gap:14px;}
   .te-actions button{background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:0;text-decoration:underline;}
   .empty{color:var(--muted);font-size:15px;text-align:center;padding:26px 0;}
@@ -101,12 +112,17 @@
 
   <!-- RECORDER -->
   <div class="recorder">
+    <div class="modes">
+      <button class="mode-tab sel" id="modeVoice" data-mode="voice">🎙️ Voice</button>
+      <button class="mode-tab" id="modeVideo" data-mode="video">🎥 Video</button>
+    </div>
+    <video id="preview" class="preview" muted playsinline></video>
     <div class="rec-top">
       <button id="recBtn" class="recbtn" aria-label="Record"><span class="dot"></span></button>
       <div class="rec-meta">
         <div id="recState" class="rec-state">Tap to record a voice memo</div>
         <div id="recTime" class="rec-time" style="display:none">0:00</div>
-        <div id="recHint" class="rec-hint">Mic permission is asked once. Audio stays on your device.</div>
+        <div id="recHint" class="rec-hint">Permission is asked once. Recording stays on your device.</div>
       </div>
     </div>
     <div id="wave" class="wave"></div>
@@ -212,19 +228,43 @@
     moodBox.append(b);
   });
 
-  /* ---------- recording ---------- */
+  /* ---------- recording (voice + video) ---------- */
   let mediaRec=null, chunks=[], stream=null, startTs=0, timer=null, audioCtx=null, analyser=null, rafId=null;
-  const recBtn=$('#recBtn'), recState=$('#recState'), recTime=$('#recTime'), recHint=$('#recHint'), waveEl=$('#wave');
+  let recMode='voice', curKind='voice';
+  const recBtn=$('#recBtn'), recState=$('#recState'), recTime=$('#recTime'), recHint=$('#recHint'), waveEl=$('#wave'), preview=$('#preview');
   for(let i=0;i<28;i++){ waveEl.append(document.createElement('span')); }
+
+  function setMode(m){
+    if(mediaRec && mediaRec.state==='recording') return; // don't switch mid-take
+    recMode=m;
+    $('#modeVoice').classList.toggle('sel', m==='voice');
+    $('#modeVideo').classList.toggle('sel', m==='video');
+    recState.textContent = m==='video' ? 'Tap to record video' : 'Tap to record a voice memo';
+    if(m!=='video'){ preview.classList.remove('on'); preview.srcObject=null; }
+  }
+  $('#modeVoice').onclick=()=>setMode('voice');
+  $('#modeVideo').onclick=()=>setMode('video');
+
+  function pickMime(video){
+    const cands = video
+      ? ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4']
+      : ['audio/webm','audio/mp4','audio/ogg'];
+    for(const c of cands){ if(MediaRecorder.isTypeSupported(c)) return c; }
+    return '';
+  }
 
   recBtn.onclick = async ()=>{
     if(mediaRec && mediaRec.state==='recording'){ stopRec(); return; }
-    if(!navigator.mediaDevices || !window.MediaRecorder){ toast('This browser can’t record audio — you can still type.'); return; }
+    if(!navigator.mediaDevices || !window.MediaRecorder){ toast('This browser can’t record — you can still type.'); return; }
+    const wantVideo = recMode==='video';
     try{
-      stream = await navigator.mediaDevices.getUserMedia({audio:true});
-    }catch(e){ toast('Mic blocked. Allow microphone access to record.'); return; }
+      stream = await navigator.mediaDevices.getUserMedia(
+        wantVideo ? {audio:true, video:{facingMode:'user', width:{ideal:1280}, height:{ideal:720}}} : {audio:true});
+    }catch(e){ toast(wantVideo ? 'Camera/mic blocked. Allow access to record video.' : 'Mic blocked. Allow microphone access.'); return; }
+    curKind = wantVideo ? 'video' : 'voice';
+    if(wantVideo){ preview.srcObject=stream; preview.classList.add('on'); preview.play().catch(()=>{}); }
     chunks=[];
-    let mime = MediaRecorder.isTypeSupported('audio/webm')?'audio/webm':(MediaRecorder.isTypeSupported('audio/mp4')?'audio/mp4':'');
+    const mime = pickMime(wantVideo);
     mediaRec = mime ? new MediaRecorder(stream,{mimeType:mime}) : new MediaRecorder(stream);
     mediaRec.ondataavailable = e=>{ if(e.data.size) chunks.push(e.data); };
     mediaRec.onstop = finishRec;
@@ -232,10 +272,10 @@
     startTs = Date.now();
     recBtn.classList.add('recording');
     recState.textContent='Recording… tap to stop';
-    recHint.textContent='Speak freely. Nobody’s editing this.';
+    recHint.textContent = wantVideo ? 'Look at the lens. Nobody’s editing this.' : 'Speak freely. Nobody’s editing this.';
     recTime.style.display='block'; recTime.textContent='0:00';
     timer=setInterval(()=>recTime.textContent=fmtTime((Date.now()-startTs)/1000),250);
-    startMeter();
+    if(!wantVideo) startMeter();
   };
 
   function stopRec(){ if(mediaRec && mediaRec.state==='recording') mediaRec.stop(); }
@@ -244,13 +284,14 @@
     clearInterval(timer); stopMeter();
     recBtn.classList.remove('recording');
     recState.textContent='Tap to record another';
-    recHint.textContent='Clip added below — it attaches when you save.';
+    recHint.textContent='Take added below — tap “Save file” to commit it, and it attaches when you save the entry.';
     recTime.style.display='none';
+    preview.classList.remove('on'); preview.srcObject=null;
     const dur=(Date.now()-startTs)/1000;
-    const blob = new Blob(chunks,{type: (mediaRec && mediaRec.mimeType) || 'audio/webm'});
+    const blob = new Blob(chunks,{type: (mediaRec && mediaRec.mimeType) || (curKind==='video'?'video/webm':'audio/webm')});
     if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
     const id=uid(), url=URL.createObjectURL(blob);
-    pendingClips.push({id,url,blob,dur});
+    pendingClips.push({id,url,blob,dur,kind:curKind});
     renderPending();
   }
 
@@ -271,19 +312,23 @@
   }
   function stopMeter(){ if(rafId)cancelAnimationFrame(rafId); waveEl.classList.remove('on'); if(audioCtx){audioCtx.close().catch(()=>{});audioCtx=null;} }
 
+  function fileNameFor(c){ return (c.kind==='video'?'video-':'voice-')+(($('#fDate').value)||todayISO())+'-'+c.id+'.'+extFor(c.kind,c.blob.type); }
   function renderPending(){
     const box=$('#clips'); box.innerHTML='';
     pendingClips.forEach(c=>{
-      const row=document.createElement('div'); row.className='clip';
-      const a=document.createElement('audio'); a.controls=true; a.src=c.url;
+      const isVid = c.kind==='video';
+      const row=document.createElement('div'); row.className='clip'+(isVid?' vid':'');
+      const media=document.createElement(isVid?'video':'audio'); media.controls=true; media.src=c.url; if(isVid) media.playsInline=true;
       const dl=document.createElement('button'); dl.className='dl'; dl.textContent='Save file';
-      dl.onclick=()=>downloadBlob(c.blob, 'memo-'+todayISO()+'-'+c.id+'.'+extFor(c.blob.type));
+      dl.onclick=()=>{ downloadBlob(c.blob, fileNameFor(c)); c.saved=true; toast('Saved — drop it in memoir/entries/media and commit.'); };
       const x=document.createElement('button'); x.className='x'; x.textContent='×';
       x.onclick=()=>{ URL.revokeObjectURL(c.url); pendingClips=pendingClips.filter(p=>p.id!==c.id); renderPending(); };
-      row.append(a,dl,x); box.append(row);
+      if(isVid){ const btns=document.createElement('div'); btns.className='clip-btns'; btns.append(dl,x); row.append(media,btns); }
+      else { row.append(media,dl,x); }
+      box.append(row);
     });
   }
-  function extFor(t){ return /mp4/.test(t)?'m4a':(/ogg/.test(t)?'ogg':'webm'); }
+  function extFor(kind,t){ t=t||''; if(kind==='video') return /mp4/.test(t)?'mp4':'webm'; return /mp4/.test(t)?'m4a':(/ogg/.test(t)?'ogg':'webm'); }
   function downloadBlob(blob,name){ const u=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=u; a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(u),1500); }
 
   /* ---------- save entry ---------- */
@@ -291,7 +336,7 @@
     const title=$('#fTitle').value.trim(), body=$('#fBody').value.trim();
     if(!title && !body && pendingClips.length===0){ toast('Nothing to save yet — talk, or write a line.'); return; }
     const clipIds=[];
-    for(const c of pendingClips){ await DB.put(c.id, c.blob); clipIds.push({id:c.id, dur:Math.round(c.dur), type:c.blob.type}); }
+    for(const c of pendingClips){ await DB.put(c.id, c.blob); clipIds.push({id:c.id, dur:Math.round(c.dur), type:c.blob.type, kind:c.kind||'voice', file:fileNameFor(c)}); }
     entries.unshift({
       id:uid(), date:$('#fDate').value||todayISO(), mood:selectedMood,
       title, body, tags:$('#fTags').value.split(',').map(s=>s.trim()).filter(Boolean),
@@ -324,9 +369,10 @@
       if(e.clips&&e.clips.length){
         for(const ci of e.clips){
           const blob=await DB.get(ci.id);
+          const isVid = (ci.kind==='video');
           const wrap=document.createElement('div'); wrap.className='te-clip';
-          if(blob){ const a=document.createElement('audio'); a.controls=true; a.src=URL.createObjectURL(blob); wrap.append(a); }
-          else { wrap.innerHTML='<span class="te-date">🎙️ voice memo ('+fmtTime(ci.dur||0)+') — audio not on this device</span>'; }
+          if(blob){ const m=document.createElement(isVid?'video':'audio'); m.controls=true; m.src=URL.createObjectURL(blob); if(isVid) m.playsInline=true; wrap.append(m); }
+          else { wrap.innerHTML='<span class="te-date">'+(isVid?'🎥 video':'🎙️ voice memo')+' ('+fmtTime(ci.dur||0)+')'+(ci.file?' — '+esc(ci.file):'')+' — not on this device</span>'; }
           card.append(wrap);
         }
       }
@@ -354,7 +400,7 @@
       lines.push('## '+prettyDate(e.date)+(e.mood?'  '+e.mood:''));
       if(e.title) lines.push('','**'+e.title+'**');
       if(e.body) lines.push('',e.body);
-      if(e.clips&&e.clips.length) lines.push('', e.clips.map(c=>'🎙️ _voice memo, '+fmtTime(c.dur||0)+'_').join('  \n'));
+      if(e.clips&&e.clips.length) lines.push('', e.clips.map(c=>(c.kind==='video'?'🎥 _video, ':'🎙️ _voice memo, ')+fmtTime(c.dur||0)+'_'+(c.file?' → `media/'+c.file+'`':'')).join('  \n'));
       if(e.tags&&e.tags.length) lines.push('','_'+e.tags.map(t=>'#'+t.replace(/\s+/g,'-')).join(' ')+'_');
       lines.push('','---','');
     });
