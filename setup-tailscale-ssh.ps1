@@ -21,8 +21,17 @@ $admin = ([Security.Principal.WindowsPrincipal] `
          ).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $admin) {
     Write-Host 'Elevating to Administrator...' -ForegroundColor Cyan
+    # When launched via "irm <url> | iex" there is no file on disk, so
+    # $PSCommandPath is empty and -File would target nothing. In that case
+    # save a copy to a temp file and relaunch the elevated shell against it.
+    $self = $PSCommandPath
+    if ([string]::IsNullOrWhiteSpace($self) -or -not (Test-Path $self)) {
+        $self = Join-Path $env:TEMP 'setup-tailscale-ssh.ps1'
+        $url  = 'https://github.com/dunal229/klar-q/raw/claude/github-windows-setup-u13thr/setup-tailscale-ssh.ps1'
+        Invoke-WebRequest -Uri $url -OutFile $self
+    }
     Start-Process powershell -Verb RunAs -ArgumentList @(
-        '-NoProfile','-ExecutionPolicy','Bypass','-File',"`"$PSCommandPath`""
+        '-NoProfile','-ExecutionPolicy','Bypass','-File',"`"$self`""
     )
     return
 }
