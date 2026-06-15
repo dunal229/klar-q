@@ -9,13 +9,13 @@
 
 ## June 15, 2026 — Day one
 
-This is where it starts. I took the first video tonight — it's on my phone.
+This is where it starts. I took the first video around midday — it's on my phone.
 
-Most of the night went to fighting the setup instead of actually recording,
-and I got frustrated. That tension is worth marking, because the whole point of
-this is that it stays raw and real and easy — and the beginning didn't feel that
-way. But the first mark is on the page now. The footage lives on my phone; the
-words live here. From tonight on, this is the record.
+A lot of today went to fighting the setup instead of actually recording, and I
+got frustrated. That tension is worth marking, because the whole point of this
+is that it stays raw and real and easy — and the beginning didn't feel that way.
+But the first mark is on the page now. The footage lives on my phone; the words
+live here. From today on, this is the record.
 
 ---
 
